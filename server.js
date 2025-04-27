@@ -24,9 +24,9 @@ app.post('/scan', async (req, res) => {
     try {
         const chromium = require('chrome-aws-lambda');
 
-        const browser = await puppeteer.launch({
+        const browser = await chromium.puppeteer.launch({
             args: chromium.args,
-            executablePath: await chromium.executablePath || '/usr/bin/google-chrome',
+            executablePath: await chromium.executablePath,
             headless: chromium.headless,
             ignoreHTTPSErrors: true,
         });
