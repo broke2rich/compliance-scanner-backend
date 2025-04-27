@@ -1,4 +1,3 @@
-import { executablePath } from 'chrome-aws-lambda';
 import puppeteer from 'puppeteer-core';
 
 export default async function handler(req, res) {
@@ -22,9 +21,9 @@ export default async function handler(req, res) {
 
   try {
     const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: await executablePath() || '/usr/bin/chromium-browser',
       headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: '/usr/bin/google-chrome-stable',  // <- Use Vercel's built-in Chrome
       ignoreHTTPSErrors: true,
     });
 
