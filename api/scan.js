@@ -21,11 +21,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const executablePath = await chromium.executablePath;
-
     const browser = await puppeteer.launch({
       args: chromium.args,
-      executablePath: executablePath,
+      executablePath: await chromium.executablePath,
       headless: chromium.headless,
       ignoreHTTPSErrors: true,
     });
