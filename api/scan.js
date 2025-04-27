@@ -1,4 +1,6 @@
+import chromium from 'chrome-aws-lambda';
 import puppeteer from 'puppeteer-core';
+
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,11 +23,12 @@ export default async function handler(req, res) {
 
   try {
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: '/usr/bin/google-chrome-stable',  // <- Use Vercel's built-in Chrome
-      ignoreHTTPSErrors: true,
-    });
+        args: chromium.args,
+        executablePath: await chromium.executablePath || '/usr/bin/chromium-browser',
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+      });
+      
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'domcontentloaded' });
