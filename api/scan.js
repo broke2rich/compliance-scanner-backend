@@ -1,8 +1,9 @@
-import { chromium } from 'chrome-aws-lambda';
+import { executablePath } from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -20,10 +21,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const browser = await chromium.puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: await executablePath() || '/usr/bin/chromium-browser',
+      headless: true,
       ignoreHTTPSErrors: true,
     });
 
@@ -48,20 +49,10 @@ export default async function handler(req, res) {
 
     await browser.close();
 
-    return res.json({
-      privacyPolicy,
-      termsOfService,
-      cookieBanner,
-      sslValid: true,
-      headers: {
-        contentSecurityPolicy: !!csp,
-        xFrameOptions: !!xfo,
-        strictTransportSecurity: !!hsts
-      }
-    });
+    return res.json({ success: true });
 
-  } catch (err) {
-    console.error('Scan failed:', err);
+  } catch (error) {
+    console.error('Scan failed:', error);
     return res.status(500).json({ error: 'Failed to scan website' });
   }
 }
