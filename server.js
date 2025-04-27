@@ -22,10 +22,15 @@ app.post('/scan', async (req, res) => {
     if (!url) return res.status(400).json({ error: 'No URL provided' });
 
     try {
+        const chromium = require('chrome-aws-lambda');
+
         const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            headless: true
-          });          
+            args: chromium.args,
+            executablePath: await chromium.executablePath || '/usr/bin/google-chrome',
+            headless: chromium.headless,
+            ignoreHTTPSErrors: true,
+        });
+          
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'domcontentloaded' });
 
