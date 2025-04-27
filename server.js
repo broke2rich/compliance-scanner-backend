@@ -13,13 +13,10 @@ const chromium = require('chrome-aws-lambda');
 
 const app = express();
 // Configure CORS
-app.use(cors({
-    origin: '*',  // Allow all origins (for now - can lock down later)
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
-  }));
+app.use(cors());
+app.options('*', cors()); //Handle preflight requests
   
-  app.use(express.json());
+app.use(express.json());
 
 app.post('/scan', async (req, res) => {
   const { url } = req.body;
