@@ -1,39 +1,23 @@
-// Compliance Scanner MVP Codebase
-// Full basic setup: Next.js frontend + Node.js backend with Express and Puppeteer
+import { chromium } from 'chrome-aws-lambda';
 
-// Folder Structure:
-// /frontend (Next.js app)
-// /backend (Node.js + Express app)
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-// ----- backend/server.js -----
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-const express = require('express');
-const cors = require('cors');
-const chromium = require('chrome-aws-lambda');
+  if (req.method !== 'POST') {
+    return res.status(405).end('Method Not Allowed');
+  }
 
-const app = express();
-// Configure CORS
-app.use(cors());
-app.options('*', cors()); //Handle preflight requests
-  
-app.use(express.json());
+  const { url } = req.body;
 
-app.post('/scan', async (req, res) => {
-    // Manual CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-    if (req.method === 'OPTIONS') {
-      // Handle CORS preflight OPTIONS request fast
-      return res.status(200).end();
-    }
-  
-    const { url } = req.body;
-  
-    if (!url) {
-      return res.status(400).json({ error: 'No URL provided' });
-    }
+  if (!url) {
+    return res.status(400).json({ error: 'No URL provided' });
+  }
 
   try {
     const browser = await chromium.puppeteer.launch({
@@ -80,9 +64,4 @@ app.post('/scan', async (req, res) => {
     console.error('Scan failed:', err);
     return res.status(500).json({ error: 'Failed to scan website' });
   }
-});
-
-module.exports = app;
-
-
-
+}

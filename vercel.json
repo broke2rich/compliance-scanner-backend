@@ -2,15 +2,8 @@
     "version": 2,
     "builds": [
       {
-        "src": "server.js",
+        "src": "api/scan.js",
         "use": "@vercel/node"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/scan",
-        "methods": ["POST"],
-        "dest": "server.js"
       }
     ]
   }
