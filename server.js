@@ -19,11 +19,21 @@ app.options('*', cors()); //Handle preflight requests
 app.use(express.json());
 
 app.post('/scan', async (req, res) => {
-  const { url } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ error: 'No URL provided' });
-  }
+    // Manual CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+    if (req.method === 'OPTIONS') {
+      // Handle CORS preflight OPTIONS request fast
+      return res.status(200).end();
+    }
+  
+    const { url } = req.body;
+  
+    if (!url) {
+      return res.status(400).json({ error: 'No URL provided' });
+    }
 
   try {
     const browser = await chromium.puppeteer.launch({
