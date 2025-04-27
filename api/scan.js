@@ -1,6 +1,4 @@
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
-
+import { chromium } from 'playwright';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,16 +20,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const browser = await puppeteer.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath || '/usr/bin/chromium-browser',
-        headless: chromium.headless,
-        ignoreHTTPSErrors: true,
-      });
-      
+    const browser = await chromium.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true,
+    });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     const privacyPolicy = await page.$$eval('a', links =>
       links.some(link => link.innerText.toLowerCase().includes('privacy'))
